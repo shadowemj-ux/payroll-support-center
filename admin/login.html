@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>관리자 로그인 | 통합급여 지원센터</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/config.js"></script>
+<script defer src="../assets/js/common.js"></script>
+</head><body>
+<div class="login-box">
+  <h1>관리자 로그인</h1>
+  <p>통합급여 지원센터 관리자 계정으로 로그인하세요.</p>
+  <form id="loginForm">
+    <div class="field"><label>이메일</label><input id="email" type="email" required autocomplete="username"></div>
+    <div class="field"><label>비밀번호</label><input id="password" type="password" required autocomplete="current-password"></div>
+    <button class="btn btn-primary" style="width:100%" type="submit">로그인</button>
+    <div id="msg"></div>
+  </form>
+  <div style="height:12px"></div>
+  <a class="more" href="../index.html">← 홈페이지로 돌아가기</a>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded",async ()=>{
+ if(await isAdmin()) location.href="dashboard.html";
+ document.getElementById("loginForm").addEventListener("submit",async e=>{
+   e.preventDefault(); const msg=document.getElementById("msg"); msg.innerHTML="";
+   const {error}=await db.auth.signInWithPassword({
+     email:document.getElementById("email").value.trim(),
+     password:document.getElementById("password").value
+   });
+   if(error) return msg.innerHTML=`<div class="error-box">${esc(error.message)}</div>`;
+   if(!(await isAdmin())){
+     await db.auth.signOut();
+     return msg.innerHTML='<div class="error-box">관리자 권한이 없는 계정입니다.</div>';
+   }
+   location.href="dashboard.html";
+ });
+});
+</script>
+</body></html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>질의응답 | 통합급여 지원센터</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script defer src="assets/js/common.js"></script>
+
+</head>
+<body data-page="qna">
+
+<header>
+  <div class="wrap header-in">
+    <a class="brand" href="index.html">
+      <div class="logo">센터</div>
+      <div><b>통합급여 지원센터</b><span>Integrated Payroll Support Center</span></div>
+    </a>
+    <nav>
+      <a data-page="notice" href="notice.html">공지사항</a>
+      <a data-page="programs" href="programs.html">업무지원 프로그램 최신버전</a>
+      <a data-page="qna" href="qna.html">질의응답</a>
+      <a data-page="suggestion" href="suggestion.html">건의사항</a>
+      <a data-page="center" href="center.html">센터안내</a>
+      <a class="admin-link" href="admin/login.html">관리자</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="page"><div class="wrap">
+<section class="panel"><div class="panel-body" id="qnaDetail"><div class="loading">불러오는 중...</div></div></section>
+</div></section>
+<script>
+document.addEventListener("DOMContentLoaded", async ()=>{
+ const id=q("id"), wrap=document.getElementById("qnaDetail");
+ const {data,error}=await db.rpc("get_public_qna");
+ const x=data?.find(v=>v.id===id);
+ if(error||!x) return wrap.innerHTML='<div class="empty">공개 질의를 찾을 수 없습니다.</div>';
+ wrap.innerHTML=`<h1 class="detail-title">${esc(x.title)}</h1>
+ <div class="detail-meta"><span class="badge ${x.status}">${x.status==="answered"?"답변완료":"답변대기"}</span><span>${fmtDate(x.created_at)}</span></div>
+ <div class="detail-content">${esc(x.question)}</div>
+ <div class="answer-box"><h3>센터 답변</h3><div>${x.answer?esc(x.answer):"아직 답변이 등록되지 않았습니다."}</div></div>
+ <div style="height:18px"></div><a class="btn btn-secondary" href="qna.html">목록으로</a>`;
+});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <b>통합급여 지원센터</b>
+    <p>교육공무직원 급여업무 지원을 위한 업무지원 홈페이지</p>
+  </div>
+</footer>
+</body>
+</html>

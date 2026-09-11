@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>업무지원 프로그램 | 통합급여 지원센터</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script defer src="assets/js/common.js"></script>
+
+</head>
+<body data-page="programs">
+
+<header>
+  <div class="wrap header-in">
+    <a class="brand" href="index.html">
+      <div class="logo">센터</div>
+      <div><b>통합급여 지원센터</b><span>Integrated Payroll Support Center</span></div>
+    </a>
+    <nav>
+      <a data-page="notice" href="notice.html">공지사항</a>
+      <a data-page="programs" href="programs.html">업무지원 프로그램 최신버전</a>
+      <a data-page="qna" href="qna.html">질의응답</a>
+      <a data-page="suggestion" href="suggestion.html">건의사항</a>
+      <a data-page="center" href="center.html">센터안내</a>
+      <a class="admin-link" href="admin/login.html">관리자</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="page">
+<div class="wrap">
+  <div class="page-title"><h1>업무지원 프로그램 최신버전</h1><p>GPS, 연차계산기, 퇴직급여계산기의 최신버전을 내려받을 수 있습니다.</p></div>
+  <div id="programGrid" class="program-grid-page"><div class="loading">불러오는 중...</div></div>
+</div>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", async ()=>{
+ const wrap=document.getElementById("programGrid");
+ const {data,error}=await db.from("programs").select("*").order("sort_order");
+ if(error) return wrap.innerHTML='<div class="empty">프로그램 정보를 불러오지 못했습니다.</div>';
+ wrap.innerHTML=data.map(p=>{
+   const url=p.file_path?publicFileUrl(p.file_path):"";
+   return `<article class="program-box">
+     <h2>${esc(p.name)}</h2>
+     <p>${esc(p.description||"")}</p>
+     <div class="big-version">${esc(p.version||"준비중")}</div>
+     <div class="release">배포일 ${p.release_date?fmtDate(p.release_date):"준비중"}</div>
+     <div class="notes">${esc(p.change_notes||"변경사항이 아직 등록되지 않았습니다.")}</div>
+     ${url?`<a class="btn btn-primary" style="width:100%" href="${url}" download>최신버전 다운로드</a>`:
+            `<button class="btn btn-secondary" style="width:100%" disabled>파일 준비중</button>`}
+   </article>`;
+ }).join("");
+});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <b>통합급여 지원센터</b>
+    <p>교육공무직원 급여업무 지원을 위한 업무지원 홈페이지</p>
+  </div>
+</footer>
+</body>
+</html>

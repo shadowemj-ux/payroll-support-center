@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>질의응답 | 통합급여 지원센터</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script defer src="assets/js/common.js"></script>
+
+</head>
+<body data-page="qna">
+
+<header>
+  <div class="wrap header-in">
+    <a class="brand" href="index.html">
+      <div class="logo">센터</div>
+      <div><b>통합급여 지원센터</b><span>Integrated Payroll Support Center</span></div>
+    </a>
+    <nav>
+      <a data-page="notice" href="notice.html">공지사항</a>
+      <a data-page="programs" href="programs.html">업무지원 프로그램 최신버전</a>
+      <a data-page="qna" href="qna.html">질의응답</a>
+      <a data-page="suggestion" href="suggestion.html">건의사항</a>
+      <a data-page="center" href="center.html">센터안내</a>
+      <a class="admin-link" href="admin/login.html">관리자</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="page">
+<div class="wrap">
+  <div class="page-title"><h1>질의응답</h1><p>질문 등록 시 공개 또는 비공개를 선택할 수 있습니다. 기관명은 관리자에게만 표시됩니다.</p></div>
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head"><div><h2>공개 질의응답</h2><p>공개를 선택한 질문과 답변만 표시됩니다.</p></div></div>
+      <div class="panel-body">
+        <div id="publicQna" class="card-list"><div class="loading">불러오는 중...</div></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>질문 등록 / 비공개 조회</h2><p>비공개 질문은 발급받은 확인코드로 조회합니다.</p></div></div>
+      <div class="panel-body">
+        <a class="btn btn-primary" href="qna-write.html">새 질문 등록</a>
+        <div style="height:12px"></div>
+        <form id="lookupForm">
+          <div class="field">
+            <label for="accessCode">비공개 질문 확인코드</label>
+            <input id="accessCode" required placeholder="질문 등록 후 받은 확인코드">
+          </div>
+          <div style="height:10px"></div>
+          <button class="btn btn-secondary" type="submit">비공개 질문 조회</button>
+        </form>
+        <div id="lookupMsg"></div>
+      </div>
+    </section>
+  </div>
+</div>
+</section>
+<script>
+async function loadPublic(){
+  const wrap=document.getElementById("publicQna");
+  const {data,error}=await db.rpc("get_public_qna");
+  if(error) return wrap.innerHTML='<div class="empty">질의응답을 불러오지 못했습니다.</div>';
+  if(!data.length) return wrap.innerHTML='<div class="empty">등록된 공개 질의가 없습니다.</div>';
+  wrap.innerHTML=data.map(x=>`<article class="item-card">
+    <h3>${esc(x.title)}</h3>
+    <p>${esc(x.question).slice(0,160)}${x.question.length>160?"…":""}</p>
+    <div class="item-meta">
+      <span class="badge ${x.status}">${x.status==="answered"?"답변완료":"답변대기"}</span>
+      <span>${fmtDate(x.created_at)}</span>
+      <a class="more" href="qna-view.html?id=${x.id}">내용보기 →</a>
+    </div>
+  </article>`).join("");
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  loadPublic();
+  document.getElementById("lookupForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const code=document.getElementById("accessCode").value.trim();
+    const msg=document.getElementById("lookupMsg");
+    msg.innerHTML="";
+    const {data,error}=await db.rpc("get_private_qna",{p_access_code:code});
+    if(error||!data?.length){
+      msg.innerHTML='<div class="error-box">일치하는 비공개 질문을 찾을 수 없습니다. 확인코드를 다시 확인해 주세요.</div>';
+      return;
+    }
+    sessionStorage.setItem("private_qna_result",JSON.stringify(data[0]));
+    location.href="qna-private-view.html";
+  });
+});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <b>통합급여 지원센터</b>
+    <p>교육공무직원 급여업무 지원을 위한 업무지원 홈페이지</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>홈 | 통합급여 지원센터</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script defer src="assets/js/common.js"></script>
+
+</head>
+<body data-page="">
+
+<header>
+  <div class="wrap header-in">
+    <a class="brand" href="index.html">
+      <div class="logo">센터</div>
+      <div><b>통합급여 지원센터</b><span>Integrated Payroll Support Center</span></div>
+    </a>
+    <nav>
+      <a data-page="notice" href="notice.html">공지사항</a>
+      <a data-page="programs" href="programs.html">업무지원 프로그램 최신버전</a>
+      <a data-page="qna" href="qna.html">질의응답</a>
+      <a data-page="suggestion" href="suggestion.html">건의사항</a>
+      <a data-page="center" href="center.html">센터안내</a>
+      <a class="admin-link" href="admin/login.html">관리자</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="home">
+  <div class="wrap">
+    <div class="main-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>업무지원 프로그램 최신버전</h2>
+            <p>GPS, 연차계산기, 퇴직급여계산기의 최신 배포본</p>
+          </div>
+          <a class="more" href="programs.html">전체보기 →</a>
+        </div>
+        <div class="panel-body">
+          <div id="homePrograms" class="program-list"><div class="loading">불러오는 중...</div></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>공지사항</h2>
+            <p>최신 공지사항 4건</p>
+          </div>
+          <a class="more" href="notice.html">전체보기 →</a>
+        </div>
+        <ul id="homeNotices" class="notice-list"><li class="loading">불러오는 중...</li></ul>
+      </aside>
+    </div>
+  </div>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", async ()=>{
+  const pWrap = document.getElementById("homePrograms");
+  const { data: programs, error: pe } = await db.from("programs").select("*").order("sort_order");
+  if(pe){ pWrap.innerHTML = '<div class="empty">프로그램 정보를 불러오지 못했습니다.</div>'; }
+  else{
+    pWrap.innerHTML = programs.map((p,i)=>{
+      const icons = ["🧭","📅","📘"];
+      const url = p.file_path ? publicFileUrl(p.file_path) : "";
+      return `<div class="program-card">
+        <div class="icon">${icons[i] || "📄"}</div>
+        <div class="program-text">
+          <h3>${esc(p.name)}</h3>
+          <p class="desc">${esc(p.description || "")}</p>
+          <div class="meta">
+            <span>현재 버전 <b>${esc(p.version || "준비중")}</b></span>
+            <span>배포일 <b>${p.release_date ? fmtDate(p.release_date) : "준비중"}</b></span>
+          </div>
+        </div>
+        ${url ? `<a class="btn btn-primary dl-btn" href="${url}" download>다운로드</a>` :
+                 `<button class="btn btn-secondary dl-btn" disabled>준비중</button>`}
+      </div>`;
+    }).join("");
+  }
+
+  const nWrap = document.getElementById("homeNotices");
+  const { data: notices, error: ne } = await db.from("notices")
+    .select("id,title,content,is_pinned,created_at")
+    .eq("is_published",true)
+    .order("is_pinned",{ascending:false})
+    .order("created_at",{ascending:false})
+    .limit(4);
+  if(ne){ nWrap.innerHTML = '<li class="empty">공지사항을 불러오지 못했습니다.</li>'; }
+  else if(!notices.length){ nWrap.innerHTML = '<li class="empty">등록된 공지사항이 없습니다.</li>'; }
+  else{
+    nWrap.innerHTML = notices.map(n=>`<li>
+      <div class="notice-top">
+        <span class="badge">${n.is_pinned ? "중요" : "공지"}</span>
+        <span class="date">${fmtDate(n.created_at)}</span>
+      </div>
+      <div class="notice-title"><a href="notice-view.html?id=${n.id}">${esc(n.title)}</a></div>
+      <div class="notice-desc">${esc((n.content||"").replace(/\\s+/g," ").slice(0,70))}${(n.content||"").length>70?"…":""}</div>
+    </li>`).join("");
+  }
+});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <b>통합급여 지원센터</b>
+    <p>교육공무직원 급여업무 지원을 위한 업무지원 홈페이지</p>
+  </div>
+</footer>
+</body>
+</html>

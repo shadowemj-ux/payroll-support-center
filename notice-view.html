@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>공지사항 | 통합급여 지원센터</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script defer src="assets/js/common.js"></script>
+
+</head>
+<body data-page="notice">
+
+<header>
+  <div class="wrap header-in">
+    <a class="brand" href="index.html">
+      <div class="logo">센터</div>
+      <div><b>통합급여 지원센터</b><span>Integrated Payroll Support Center</span></div>
+    </a>
+    <nav>
+      <a data-page="notice" href="notice.html">공지사항</a>
+      <a data-page="programs" href="programs.html">업무지원 프로그램 최신버전</a>
+      <a data-page="qna" href="qna.html">질의응답</a>
+      <a data-page="suggestion" href="suggestion.html">건의사항</a>
+      <a data-page="center" href="center.html">센터안내</a>
+      <a class="admin-link" href="admin/login.html">관리자</a>
+    </nav>
+  </div>
+</header>
+<main>
+<section class="page">
+<div class="wrap">
+  <section class="panel">
+    <div class="panel-body" id="noticeDetail"><div class="loading">불러오는 중...</div></div>
+  </section>
+</div>
+</section>
+<script>
+document.addEventListener("DOMContentLoaded", async ()=>{
+  const id=q("id"), wrap=document.getElementById("noticeDetail");
+  if(!id) return wrap.innerHTML='<div class="empty">잘못된 접근입니다.</div>';
+  const {data,error}=await db.from("notices").select("*").eq("id",id).eq("is_published",true).maybeSingle();
+  if(error||!data) return wrap.innerHTML='<div class="empty">공지사항을 찾을 수 없습니다.</div>';
+  wrap.innerHTML=`
+    <h1 class="detail-title">${esc(data.title)}</h1>
+    <div class="detail-meta">
+      <span>${data.is_pinned?'<span class="badge">중요</span>':'<span class="badge">공지</span>'}</span>
+      <span>등록일 ${fmtDate(data.created_at)}</span>
+    </div>
+    <div class="detail-content">${esc(data.content)}</div>
+    <a class="btn btn-secondary" href="notice.html">목록으로</a>`;
+});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <b>통합급여 지원센터</b>
+    <p>교육공무직원 급여업무 지원을 위한 업무지원 홈페이지</p>
+  </div>
+</footer>
+</body>
+</html>

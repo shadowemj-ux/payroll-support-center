@@ -36,11 +36,11 @@
 document.addEventListener("DOMContentLoaded",()=>{
  const wrap=document.getElementById("privateDetail");
  const raw=sessionStorage.getItem("private_qna_result");
- if(!raw) return wrap.innerHTML='<div class="empty">조회 정보가 없습니다. 질의응답 페이지에서 확인코드로 다시 조회해 주세요.</div>';
+ if(!raw) return wrap.innerHTML='<div class="empty">조회 정보가 없습니다. 질의응답 페이지에서 문의번호와 비밀번호로 다시 조회해 주세요.</div>';
  const x=JSON.parse(raw);
  sessionStorage.removeItem("private_qna_result");
  wrap.innerHTML=`<h1 class="detail-title">${esc(x.title)}</h1>
- <div class="detail-meta"><span class="badge private">비공개</span><span class="badge ${x.status}">${x.status==="answered"?"답변완료":"답변대기"}</span><span>${fmtDate(x.created_at)}</span></div>
+ <div class="detail-meta"><span class="badge private">비공개</span><span>${esc(x.inquiry_no||"")}</span><span class="badge ${x.status}">${x.status==="answered"?"답변완료":"답변대기"}</span><span>${fmtDate(x.created_at)}</span></div>
  <div class="detail-content">${esc(x.question)}</div>
  <div class="answer-box"><h3>센터 답변</h3><div>${x.answer?esc(x.answer):"아직 답변이 등록되지 않았습니다."}</div></div>
  <div style="height:18px"></div><a class="btn btn-secondary" href="qna.html">질의응답으로</a>`;

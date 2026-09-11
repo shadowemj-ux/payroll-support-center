@@ -172,7 +172,7 @@ async function loadQna(){
  wrap.classList.remove("loading");
  wrap.innerHTML=qnas.map(x=>`<article class="item-card">
    <h3>${esc(x.title)}</h3>
-   <div class="item-meta"><span>${esc(map[x.id]||"-")}</span><span>${x.visibility==="public"?"공개":"비공개"}</span><span>${fmtDateTime(x.created_at)}</span></div>
+   <div class="item-meta"><span>${esc(x.inquiry_no||"-")}</span><span>${esc(map[x.id]||"-")}</span><span>${x.visibility==="public"?"공개":"비공개"}</span><span>${fmtDateTime(x.created_at)}</span></div>
    <p style="margin-top:10px;white-space:pre-wrap">${esc(x.question)}</p>
    <div class="field" style="margin-top:12px"><label>답변</label><textarea id="ans-${x.id}" style="min-height:110px">${esc(x.answer||"")}</textarea></div>
    <div class="admin-actions"><button class="btn btn-primary btn-small" onclick="saveAnswer('${x.id}')">답변 저장</button>

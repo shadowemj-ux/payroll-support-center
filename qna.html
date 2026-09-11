@@ -40,14 +40,19 @@
       </div>
     </section>
     <section class="panel">
-      <div class="panel-head"><div><h2>질문 등록 / 비공개 조회</h2><p>비공개 질문은 발급받은 확인코드로 조회합니다.</p></div></div>
+      <div class="panel-head"><div><h2>질문 등록 / 비공개 조회</h2><p>비공개 질문은 문의번호와 등록 시 설정한 4자리 비밀번호로 조회합니다.</p></div></div>
       <div class="panel-body">
         <a class="btn btn-primary" href="qna-write.html">새 질문 등록</a>
         <div style="height:12px"></div>
         <form id="lookupForm">
           <div class="field">
-            <label for="accessCode">비공개 질문 확인코드</label>
-            <input id="accessCode" required placeholder="질문 등록 후 받은 확인코드">
+            <label for="inquiryNo">문의번호</label>
+            <input id="inquiryNo" required maxlength="12" autocomplete="off" placeholder="예: Q-260911-001">
+          </div>
+          <div style="height:10px"></div>
+          <div class="field">
+            <label for="lookupPassword">비밀번호</label>
+            <input id="lookupPassword" type="password" required inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="current-password" placeholder="숫자 4자리">
           </div>
           <div style="height:10px"></div>
           <button class="btn btn-secondary" type="submit">비공개 질문 조회</button>
@@ -59,6 +64,13 @@
 </div>
 </section>
 <script>
+function normalizeInquiryNo(value){
+  const original=(value||"").trim().toUpperCase();
+  const digits=original.replace(/\D/g,"").slice(0,9);
+  if(digits.length===9) return `Q-${digits.slice(0,6)}-${digits.slice(6)}`;
+  return original;
+}
+
 async function loadPublic(){
   const wrap=document.getElementById("publicQna");
   const {data,error}=await db.rpc("get_public_qna");
@@ -74,18 +86,47 @@ async function loadPublic(){
     </div>
   </article>`).join("");
 }
+
 document.addEventListener("DOMContentLoaded",()=>{
   loadPublic();
+
+  const inquiryInput=document.getElementById("inquiryNo");
+  const passwordInput=document.getElementById("lookupPassword");
+
+  inquiryInput.addEventListener("blur",()=>{
+    inquiryInput.value=normalizeInquiryNo(inquiryInput.value);
+  });
+  passwordInput.addEventListener("input",()=>{
+    passwordInput.value=passwordInput.value.replace(/\D/g,"").slice(0,4);
+  });
+
   document.getElementById("lookupForm").addEventListener("submit",async e=>{
     e.preventDefault();
-    const code=document.getElementById("accessCode").value.trim();
+
+    const inquiryNo=normalizeInquiryNo(inquiryInput.value);
+    const password=passwordInput.value.trim();
     const msg=document.getElementById("lookupMsg");
     msg.innerHTML="";
-    const {data,error}=await db.rpc("get_private_qna",{p_access_code:code});
-    if(error||!data?.length){
-      msg.innerHTML='<div class="error-box">일치하는 비공개 질문을 찾을 수 없습니다. 확인코드를 다시 확인해 주세요.</div>';
+
+    if(!/^Q-\d{6}-\d{3}$/.test(inquiryNo)){
+      msg.innerHTML='<div class="error-box">문의번호를 Q-260911-001 형식으로 입력해 주세요.</div>';
       return;
     }
+    if(!/^\d{4}$/.test(password)){
+      msg.innerHTML='<div class="error-box">비밀번호를 숫자 4자리로 입력해 주세요.</div>';
+      return;
+    }
+
+    const {data,error}=await db.rpc("get_private_qna_v2",{
+      p_inquiry_no:inquiryNo,
+      p_password:password
+    });
+
+    if(error||!data?.length){
+      msg.innerHTML='<div class="error-box">문의번호 또는 비밀번호가 일치하지 않습니다.</div>';
+      return;
+    }
+
     sessionStorage.setItem("private_qna_result",JSON.stringify(data[0]));
     location.href="qna-private-view.html";
   });

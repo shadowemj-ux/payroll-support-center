@@ -34,7 +34,7 @@
   <div class="page-title"><h1>질의응답</h1><p>질문 등록 시 공개 또는 비공개를 선택할 수 있습니다. 기관명은 관리자에게만 표시됩니다.</p></div>
   <div class="grid-2">
     <section class="panel">
-      <div class="panel-head"><div><h2>공개 질의응답</h2><p>공개를 선택한 질문과 답변만 표시됩니다.</p></div></div>
+      <div class="panel-head"><div><h2>공개 질의응답</h2><p>FAQ를 먼저 표시하고, 그 아래에 공개 질문과 답변을 표시합니다.</p></div></div>
       <div class="panel-body">
         <div id="publicQna" class="card-list"><div class="loading">불러오는 중...</div></div>
       </div>
@@ -73,10 +73,22 @@ function normalizeInquiryNo(value){
 
 async function loadPublic(){
   const wrap=document.getElementById("publicQna");
-  const {data,error}=await db.rpc("get_public_qna");
-  if(error) return wrap.innerHTML='<div class="empty">질의응답을 불러오지 못했습니다.</div>';
-  if(!data.length) return wrap.innerHTML='<div class="empty">등록된 공개 질의가 없습니다.</div>';
-  wrap.innerHTML=data.map(x=>`<article class="item-card">
+
+  const [{data:faqs,error:fe},{data:qnas,error:qe}]=await Promise.all([
+    db.from("faqs").select("id,title,answer,sort_order,created_at").eq("is_published",true).order("sort_order",{ascending:true}).order("created_at",{ascending:false}),
+    db.rpc("get_public_qna")
+  ]);
+
+  if(fe||qe){
+    return wrap.innerHTML='<div class="empty">질의응답을 불러오지 못했습니다.</div>';
+  }
+
+  const faqHtml=(faqs||[]).map(x=>`<article class="item-card">
+    <h3><span class="badge">FAQ</span> ${esc(x.title)}</h3>
+    <p style="white-space:pre-wrap">${esc(x.answer)}</p>
+  </article>`).join("");
+
+  const qnaHtml=(qnas||[]).map(x=>`<article class="item-card">
     <h3>${esc(x.title)}</h3>
     <p>${esc(x.question).slice(0,160)}${x.question.length>160?"…":""}</p>
     <div class="item-meta">
@@ -85,6 +97,12 @@ async function loadPublic(){
       <a class="more" href="qna-view.html?id=${x.id}">내용보기 →</a>
     </div>
   </article>`).join("");
+
+  if(!faqHtml&&!qnaHtml){
+    return wrap.innerHTML='<div class="empty">등록된 공개 질의가 없습니다.</div>';
+  }
+
+  wrap.innerHTML=faqHtml+qnaHtml;
 }
 
 document.addEventListener("DOMContentLoaded",()=>{

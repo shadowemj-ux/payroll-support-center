@@ -9,7 +9,7 @@
 </head><body>
 <div class="admin-shell">
   <div class="admin-top">
-    <div><h1>급여통합지원센터 관리자</h1><div class="help">공지, 프로그램, 질의응답, 건의사항, 센터안내를 관리합니다.</div></div>
+    <div><h1>급여통합지원센터 관리자</h1><div class="help">공지, 프로그램, 질의응답, FAQ, 건의사항, 센터안내를 관리합니다.</div></div>
     <div><a class="btn btn-secondary btn-small" href="../index.html">홈페이지</a> <button id="logoutBtn" class="btn btn-secondary btn-small">로그아웃</button></div>
   </div>
 
@@ -17,6 +17,7 @@
     <button class="tab-btn active" data-tab="notices">공지사항</button>
     <button class="tab-btn" data-tab="programs">프로그램</button>
     <button class="tab-btn" data-tab="qna">질의응답</button>
+    <button class="tab-btn" data-tab="faq">FAQ</button>
     <button class="tab-btn" data-tab="suggestions">건의사항</button>
     <button class="tab-btn" data-tab="contacts">센터안내</button>
   </div>
@@ -43,6 +44,22 @@
 
   <section id="tab-qna" class="tab-pane">
     <div class="panel"><div class="panel-head"><h2>질의응답 관리</h2></div><div class="panel-body"><div id="adminQna" class="card-list loading">불러오는 중...</div></div></div>
+  </section>
+
+  <section id="tab-faq" class="tab-pane">
+    <div class="admin-grid">
+      <div class="panel"><div class="panel-head"><h2>FAQ 목록</h2></div><div id="adminFaqList" class="admin-list loading">불러오는 중...</div></div>
+      <div class="panel"><div class="panel-head"><h2>FAQ 등록 / 수정</h2></div><div class="panel-body">
+        <form id="faqForm" class="form-grid">
+          <input type="hidden" id="faqId">
+          <div class="field full"><label>질문</label><input id="faqTitle" required placeholder="자주 묻는 질문을 입력하세요"></div>
+          <div class="field full"><label>답변</label><textarea id="faqAnswer" required style="min-height:180px" placeholder="FAQ 답변을 입력하세요"></textarea></div>
+          <div class="field"><label>정렬순서</label><input id="faqSort" type="number" value="0"></div>
+          <div class="field"><label><input id="faqPublished" type="checkbox" style="width:auto" checked> 공개</label></div>
+          <div class="field full"><button class="btn btn-primary" type="submit">저장</button> <button id="faqReset" class="btn btn-secondary" type="button">새 FAQ</button><div id="faqMsg"></div></div>
+        </form>
+      </div></div>
+    </div>
   </section>
 
   <section id="tab-suggestions" class="tab-pane">
@@ -191,6 +208,70 @@ window.saveAnswer=async id=>{
  if(!error) setTimeout(loadQna,500);
 };
 
+async function loadFaqs(){
+ const wrap=document.getElementById("adminFaqList");
+ const {data,error}=await db.from("faqs").select("*").order("sort_order",{ascending:true}).order("created_at",{ascending:false});
+ if(error) return wrap.innerHTML=`<div class="error-box">${esc(error.message)}</div>`;
+ if(!data.length){
+   wrap.classList.remove("loading");
+   return wrap.innerHTML='<div class="empty">등록된 FAQ가 없습니다.</div>';
+ }
+ wrap.classList.remove("loading");
+ wrap.innerHTML=data.map(x=>`<div class="admin-item">
+   <h4>[FAQ] ${esc(x.title)}</h4>
+   <p>순서 ${x.sort_order} · ${x.is_published?"공개":"비공개"}</p>
+   <div class="admin-actions">
+     <button class="btn btn-secondary btn-small" onclick='editFaq(${JSON.stringify(x)})'>수정</button>
+     <button class="btn btn-danger btn-small" onclick="deleteFaq(${x.id})">삭제</button>
+   </div>
+ </div>`).join("");
+}
+
+window.editFaq=x=>{
+ document.getElementById("faqId").value=x.id;
+ document.getElementById("faqTitle").value=x.title||"";
+ document.getElementById("faqAnswer").value=x.answer||"";
+ document.getElementById("faqSort").value=x.sort_order??0;
+ document.getElementById("faqPublished").checked=!!x.is_published;
+ switchTab("faq");
+};
+
+window.deleteFaq=async id=>{
+ if(!confirm("이 FAQ를 삭제하시겠습니까?")) return;
+ const {error}=await db.from("faqs").delete().eq("id",id);
+ if(error) alert(error.message); else loadFaqs();
+};
+
+function resetFaq(){
+ document.getElementById("faqForm").reset();
+ document.getElementById("faqId").value="";
+ document.getElementById("faqSort").value=0;
+ document.getElementById("faqPublished").checked=true;
+ document.getElementById("faqMsg").innerHTML="";
+}
+
+document.getElementById("faqReset").onclick=resetFaq;
+document.getElementById("faqForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const id=document.getElementById("faqId").value;
+ const payload={
+   title:document.getElementById("faqTitle").value.trim(),
+   answer:document.getElementById("faqAnswer").value.trim(),
+   sort_order:Number(document.getElementById("faqSort").value||0),
+   is_published:document.getElementById("faqPublished").checked,
+   updated_at:new Date().toISOString()
+ };
+ const op=id ? db.from("faqs").update(payload).eq("id",id) : db.from("faqs").insert(payload);
+ const {error}=await op;
+ const msg=document.getElementById("faqMsg");
+ if(error) msg.innerHTML=`<div class="error-box">${esc(error.message)}</div>`;
+ else{
+   msg.innerHTML='<div class="success-box">저장되었습니다.</div>';
+   resetFaq();
+   loadFaqs();
+ }
+});
+
 async function loadSuggestions(){
  const wrap=document.getElementById("adminSuggestions");
  const {data,error}=await db.from("suggestions").select("*").order("created_at",{ascending:false});
@@ -265,7 +346,7 @@ document.getElementById("contactForm").addEventListener("submit",async e=>{
 document.addEventListener("DOMContentLoaded",async ()=>{
  if(!(await requireAdmin())) return;
  adminReady=true;
- loadNotices();loadPrograms();loadQna();loadSuggestions();loadContacts();
+ loadNotices();loadPrograms();loadQna();loadFaqs();loadSuggestions();loadContacts();
  document.getElementById("logoutBtn").onclick=async()=>{await db.auth.signOut();location.href="login.html";};
 });
 </script>

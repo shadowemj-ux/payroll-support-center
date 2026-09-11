@@ -144,8 +144,11 @@ window.saveProgram=async(e,code)=>{
  const file=document.getElementById("file-"+code).files[0];
  let filePath=null;
  if(file){
-   const safeName=file.name.replace(/[^a-zA-Z0-9._가-힣-]/g,"_");
-   filePath=`${code}/${Date.now()}_${safeName}`;
+   // Supabase Storage 객체 경로는 한글 파일명을 그대로 넣지 않고
+   // 영문/숫자로만 된 내부 저장명으로 생성합니다.
+   const rawExt=(file.name.split(".").pop()||"").toLowerCase();
+   const safeExt=rawExt.replace(/[^a-z0-9]/g,"") || "xlsm";
+   filePath=`${code}/${Date.now()}.${safeExt}`;
    const {error:ue}=await db.storage.from("program-files").upload(filePath,file,{upsert:false});
    if(ue){msg.innerHTML=`<span class="error-box">${esc(ue.message)}</span>`;return;}
  }
